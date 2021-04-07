@@ -118,21 +118,24 @@ def Main():
 	    				final = output.replace('{{HamppDir}}', '/sdcard/www')
 	    				#httpd.conf file replacing
 	    				con_file = open(epath+'apache2/httpd.conf', 'wt')
-	    				con_file.seek(0)
 	    				con_file.write(final)
-	    				con_file.truncate()
+	    				file.close()
+	    				con_file.close()
 	    				
 	    				#Start apache server
 	    				os.system('apachectl start')
-	    				url = "http://127.0.0.1:8080"
-	    				request = requests.get(url)
-	    				if "Apache" in request.headers['server']:
-	    					print ('''\n\n''')
-	    					print ('''\033[1;32m Apache Server Started Succesfully at\033[1;33m''',url,'''\033[1;32mshowing files from \033[1;33m'/sdcard/www'\033[1;32m ..........\033[1;33m\ \033[00m \n\n''')
-	    					sleep(0.1)
-	    				else:
-	    					print("\n \033[1;31mApache Starting Failed")
-	    				Main()
+	    				try:
+	    					url = "http://127.0.0.1:8080"
+	    					request = requests.get(url)
+	    					if "Apache" in request.headers['server']:
+	    						print ('''\n\n''')
+	    						print ('''\033[1;32m Apache Server Started Succesfully at\033[1;33m''',url,'''\033[1;32mshowing files from \033[1;33m'/sdcard/www'\033[1;32m ..........\033[1;33m\ \033[00m \n\n''')
+	    						sleep(0.1)
+	    					else:
+	    						print("\n \033[1;31mSomething went wrong\n")
+	    					Main()
+	    				except:
+	    					print("\n \033[1;31mApache Starting Failed..... Something error happened...\n")
 	    			else:
 	    				print("\n \033[1;31mSomething went wrong!")
 	    		else:
