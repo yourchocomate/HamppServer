@@ -142,6 +142,8 @@ def Main():
 	    			print("\n \033[1;31mError: hampp.conf file not found!")
 	elif choice == '2':
 	   	os.system('killall httpd')
+	   	if path.exists("/data/data/com.termux/files/usr/var/run/apache2/httpd.pid"):
+	   		os.system("rm -rf /data/data/com.termux/files/usr/var/run/apache2/httpd.pid")
 	   	print ('''\n\n''')
 	   	print ('''\033[1;32m Apache Server Stopped Succesfully ..........\033[1;33m\ \033[00m \n\n''')
 	   	sleep(0.1)
@@ -163,6 +165,8 @@ def Main():
 	   	sleep(0.1)
 	   	Main()
 	elif choice == '5':
+	   	print ('''\n\n''')
+	   	print ('''\033[1;32m Bye Bye.. See you again \033[1;33m :) \033[00m \n\n''')
 	   	sys.exit
 	else:
 	    print('unknown error :| ')
