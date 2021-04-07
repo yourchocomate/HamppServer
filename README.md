@@ -7,9 +7,9 @@ A complete localhost server with apache2, mariadb/mysql and phpmyadmin for termu
 # INSTALLATION
 
 ```
-pkg update && pkg upgrade
+pkg update -y && pkg upgrade -y
 termux-setup-storage
-pkg install git
+pkg install git -y
 git clone https://github.com/yourchocomate/HamppServer.git
 cd HamppServer
 chmod +x install
