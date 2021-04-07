@@ -141,7 +141,7 @@ def Main():
 	    		else:
 	    			print("\n \033[1;31mError: hampp.conf file not found!")
 	elif choice == '2':
-	   	os.system('apachectl stop')
+	   	os.system('killall httpd')
 	   	print ('''\n\n''')
 	   	print ('''\033[1;32m Apache Server Stopped Succesfully ..........\033[1;33m\ \033[00m \n\n''')
 	   	sleep(0.1)
