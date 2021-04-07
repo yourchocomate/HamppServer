@@ -69,8 +69,8 @@ class setu(object):
       if path.exists(epath+"apache2/httpd.conf"):
       	f1 = open(epath+'apache2/httpd.conf','r')
       	f2 = open(spath+'HamppServer/core/hampp.conf', 'w')
-      	checkWords = ("#LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so","LoadModule mpm_worker_module","Listen 8080","/data/data/com.termux/files/usr/share/apache2/default-site/htdocs","#ServerName www.example.com:8080")
-      	repWords = ("LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so\nLoadModule {{phpVersion}}_module /data/data/com.termux/files/usr/libexec/apache2/lib{{phpVersion}}.so\n\n<FilesMatch \.php$>\n SetHandler application/x-httpd-php\n</FilesMatch>\n","#LoadModule mpm_worker_module","Listen {{HamppPort}}","{{HamppDir}}","ServerName localhost")
+      	checkWords = ("#LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so","LoadModule mpm_worker_module","Listen 8080","/data/data/com.termux/files/usr/share/apache2/default-site/htdocs","#ServerName www.example.com:8080", "DirectoryIndex index.html")
+      	repWords = ("LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so\nLoadModule {{phpVersion}}_module /data/data/com.termux/files/usr/libexec/apache2/lib{{phpVersion}}.so\n\n<FilesMatch \.php$>\n SetHandler application/x-httpd-php\n</FilesMatch>\n","#LoadModule mpm_worker_module","Listen {{HamppPort}}","{{HamppDir}}","ServerName localhost","DirectoryIndex index.html index.htm default.htm index.php index.php3 index.phtml index.php5 index.shtml mwindex.phtml")
       	for line in f1:
       	 	for check, rep in zip(checkWords, repWords):
       	 		line = line.replace(check, rep)
