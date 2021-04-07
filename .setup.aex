@@ -72,9 +72,9 @@ class setu(object):
       	checkWords = ("#LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so","LoadModule mpm_worker_module","Listen 8080","/data/data/com.termux/files/usr/share/apache2/default-site/htdocs","#ServerName www.example.com:8080")
       	repWords = ("LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so\nLoadModule {{phpVersion}}_module /data/data/com.termux/files/usr/libexec/apache2/lib{{phpVersion}}.so\n\n<FilesMatch \.php$>\n SetHandler application/x-httpd-php\n</FilesMatch>\n","#LoadModule mpm_worker_module","Listen {{HamppPort}}","{{HamppDir}}","ServerName localhost")
       	for line in f1:
-      	 		for check, rep in zip(checkWords, repWords):
-      	 			line = line.replace(check, rep)
-      	 		f2.write(line)
+      	 	for check, rep in zip(checkWords, repWords):
+      	 		line = line.replace(check, rep)
+      	 	f2.write(line)
       	f1.close()
       	f2.close()
       if path.exists("/data/data/com.termux/files/usr/libexec/apache2/libphp.so"):
