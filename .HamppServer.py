@@ -66,10 +66,10 @@ def Main():
 		    				final = output.replace('{{HamppDir}}', set_dir)
 		    				
 		    				#httpd.conf file replacing
-		    				con_file = open(epath+'apache2/httpd.conf', 'wt')
-		    				con_file.seek(0)
+		    				con_file = open(epath+'apache2/httpd.conf', 'w')
 		    				con_file.write(final)
-		    				con_file.truncate()
+		    				file.close()
+		    				con_file.close()
 		    				
 		    				#Start Apache server
 		    				os.system('apachectl start')
