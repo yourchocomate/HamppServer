@@ -1,0 +1,43 @@
+# Tool Name :- HamppServer
+# Author :- Md Habibur Rahman
+# Date :- 03 April 2021
+
+if [ ! -d /usr/bin ];then
+  if [ ! -e /data/data/com.termux/files/usr/bin/python ];then
+    pkg update
+    pkg install python -y
+  fi
+fi
+
+if [ ! -d /usr/bin ];then
+  if [ ! -e /data/data/com.termux/files/usr/bin/apachectl ];then
+    pkg update
+    apt install php-apache -y
+  fi
+fi
+
+if [ ! -d /usr/bin ];then
+  if [ ! -e /data/data/com.termux/files/usr/bin/mysql ];then
+    pkg update
+    pkg install mariadb -y
+  fi
+fi
+
+if [ ! -d /usr/bin ];then
+  if [ ! -e /data/data/com.termux/files/usr/bin/unzip ];then
+    pkg update
+    pkg install unzip -y
+  fi
+fi
+
+if [ ! -d /usr/wget ];then
+  if [ ! -e /data/data/com.termux/files/usr/bin/wget ];then
+    pkg update
+    pkg install wget -y
+  fi
+fi
+
+pip install requests
+pip install colorama
+python .setup.aex
+exit

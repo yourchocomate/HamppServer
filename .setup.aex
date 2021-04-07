@@ -1,0 +1,127 @@
+# Tool Name :- HamppServer
+# Author :- Md Habibur Rahman
+# Date :- 03 April 2021
+
+import sys
+import os
+import os.path
+import random
+from os import path
+from time import sleep
+from colorama import *
+from colorama import Fore,Back,init
+from platform import system
+init()
+
+bpath = "/data/data/com.termux/files/usr/bin/"
+spath = "/data/data/com.termux/files/usr/share/"
+epath = "/data/data/com.termux/files/usr/etc/"
+    
+def logo():
+        clear = "\x1b[0m"
+        colors = [36, 32, 34, 35, 31, 37  ]
+
+        x = """ 
+
+
+   __ __                       ____                    
+  / // /__ ___ _  ___  ___    / __/__ _____  _____ ____
+ / _  / _ `/  ' \/ _ \/ _ \  _\ \/ -_) __/ |/ / -_) __/
+/_//_/\_,_/_/_/_/ .__/ .__/ /___/\__/_/  |___/\__/_/   
+               /_/  /_/                                
+
+             
+ Author: Md Habibur Rahman
+ Facebook: https://facebook.com/yourchocomate
+   """
+        for N, line in enumerate(x.split("\n")):
+            sys.stdout.write("\x1b[1;%dm%s%s\n" % (random.choice(colors), line, clear))
+            sleep(0.05)
+
+class setu(object):
+   def rem(self):
+     if path.exists("hampp") or path.exists(spath+"HamppServer"):
+       if system=="Linux":
+         os.system("pip install colorama")
+         os.system("pip install requests")
+         os.system("rm -rf "+spath+"HamppServer && rm -rf "+bpath+"hampp")
+       else:
+        print("\n\033[01;33m\007   [\033[01;31m+\033[01;33m] \033[01;32mHamppServer is currently available for only termux.")
+   def setup(self):
+    self.rem()
+    if system=="ubuntu":
+      logo()
+      print("\n\033[01;33m\007   [\033[01;31m+\033[01;33m] \033[01;32mHamppServer is currently available for only termux.")
+    else:
+      logo()
+      print("\n\033[01;33m\007Installing HamppServer .....\n")
+      if os.access('/sdcard', os.R_OK):
+         if path.exists('/sdcard/www'):
+         	pass
+         else:
+         	os.system("mkdir /sdcard/www")
+      else:
+       	print("\n\n \033[01;31mSetup storage permission to termux to continue...\n\n")
+       	sys.exit()
+      os.system("mkdir "+spath+"HamppServer")
+      os.system("mkdir "+spath+"HamppServer/core")
+      os.system("mv -v core/hampp "+bpath)
+      if path.exists(epath+"apache2/httpd.conf"):
+      	f1 = open(epath+'apache2/httpd.conf','r')
+      	f2 = open(spath+'HamppServer/core/hampp.conf', 'w')
+      	checkWords = ("#LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so","LoadModule mpm_worker_module","Listen 8080","/data/data/com.termux/files/usr/share/apache2/default-site/htdocs","#ServerName www.example.com:8080")
+      	repWords = ("LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so\nLoadModule {{phpVersion}}_module /data/data/com.termux/files/usr/libexec/apache2/lib{{phpVersion}}.so\n\n<FilesMatch \.php$>\n SetHandler application/x-httpd-php\n</FilesMatch>\n","#LoadModule mpm_worker_module","Listen {{HamppPort}}","{{HamppDir}}","ServerName localhost")
+      	for line in f1:
+      	 		for check, rep in zip(checkWords, repWords):
+      	 			line = line.replace(check, rep)
+      	 		f2.write(line)
+      	f1.close()
+      	f2.close()
+      if path.exists("/data/data/com.termux/files/usr/libexec/apache2/libphp.so"):
+      		file = open(spath+"HamppServer/core/hampp.conf", "r")
+      		output = file.read().replace('{{phpVersion}}', 'php')
+      		con_file = open(spath+'HamppServer/core/hampp.conf', 'wt')
+      		con_file.seek(0)
+      		con_file.write(output)
+      		con_file.truncate()
+      if path.exists("/data/data/com.termux/files/usr/libexec/apache2/libphp7.so"):
+      		file = open(spath+"HamppServer/core/hampp.conf", "r")
+      		output = file.read().replace('{{phpVersion}}', 'php7')
+      		con_file = open(spath+'HamppServer/core/hampp.conf', 'wt')
+      		con_file.seek(0)
+      		con_file.write(output)
+      		con_file.truncate()
+      os.system("mv -v .HamppServer.py LICENSE "+spath+"HamppServer")
+      os.system("cp "+spath+"mysql/mysql.server "+bpath)
+      if path.exists("/sdcard/www/index.php"):
+      	pass
+      else:
+      	os.system("mv -v core/index.php /sdcard/www")
+      os.system("mv -v core/phpinfo.php /sdcard/www")
+      if path.exists("/sdcard/www/phpmyadmin"):
+      	pass
+      else:
+      	choice = input("\n\033[01;33mDo you want to install phpmyadmin? (y/n)")
+      	if choice == "y":
+      		print("\n\033[01;32mDownloading phpmyadmin.....\033[01;33m\\033[00m\n")
+      		os.system("wget https://github.com/yourchocomate/phpmyadmin/raw/main/phpmyadmin.zip -o core/phpmyadmin.zip")
+      		os.system("unzip core/phpmyadmin.zip -d /sdcard/www/phpmyadmin")
+      	else:
+      		pass
+      os.system("chmod +x "+bpath+"hampp")
+      os.system("chmod +x "+spath+"HamppServer/.HamppServer.py")
+      os.system("chmod +x "+spath+"HamppServer/core/hampp.conf")
+      os.system("cd .. && rm -rf HamppServer")
+      sleep(1)
+      os.system('clear')
+      logo()
+      print("\n\033[01;33m\007   [\033[01;31m+\033[01;33m] \033[01;32mInstalled HamppServer.")
+      print("\033[01;33m   [\033[01;31m+\033[01;33m] \033[01;32mType :- \033[01;33mhampp \033[01;32mto run HamppServer.\033[00m\n")
+
+
+def HamppServer():
+  try:
+    setu().setup()
+  except KeyboardInterrupt:
+    exit()
+HamppServer()

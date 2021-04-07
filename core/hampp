@@ -1,0 +1,11 @@
+# Tool Name :- HamppServer
+# Author :- Md Habibur Rahman
+# Date :- 03 April 2021
+
+if [ -d /data/data/com.termux/files/usr/share/HamppServer ];then
+  cd /data/data/com.termux/files/usr/share/HamppServer
+  exec python .HamppServer.py $@
+else
+  cd /usr/share/HamppServer
+  exec python .HamppServer.py $@
+fi
