@@ -24,19 +24,49 @@ stop_services() {
     
     # Try to stop using HamppServer if available
     if [ -f "hampp.py" ]; then
-        python3 hampp.py stop-apache 2>/dev/null || true
-        python3 hampp.py stop-mysql 2>/dev/null || true
+        echo "   Stopping Apache..."
+        if python3 hampp.py stop-apache 2>/dev/null; then
+            echo "   ✅ Apache stopped successfully"
+        else
+            echo "   ⚠️ Apache was not running or failed to stop"
+        fi
+        
+        echo "   Stopping MySQL..."
+        if python3 hampp.py stop-mysql 2>/dev/null; then
+            echo "   ✅ MySQL stopped successfully"
+        else
+            echo "   ⚠️ MySQL was not running or failed to stop"
+        fi
     fi
     
-    # Force stop services if still running
+    # Force stop any remaining processes
+    echo "   Checking for remaining processes..."
+    stopped_processes=0
+    
     if command -v pkill &> /dev/null; then
-        pkill -f "apache" 2>/dev/null || true
-        pkill -f "httpd" 2>/dev/null || true
-        pkill -f "mysql" 2>/dev/null || true
-        pkill -f "mysqld" 2>/dev/null || true
+        if pkill -f "httpd" 2>/dev/null; then
+            echo "   🔄 Killed remaining Apache processes"
+            stopped_processes=1
+        fi
+        if pkill -f "apache" 2>/dev/null; then
+            echo "   🔄 Killed remaining Apache processes"
+            stopped_processes=1
+        fi
+        if pkill -f "mariadbd" 2>/dev/null; then
+            echo "   🔄 Killed remaining MariaDB processes"
+            stopped_processes=1
+        fi
+        if pkill -f "mysqld" 2>/dev/null; then
+            echo "   🔄 Killed remaining MySQL processes"
+            stopped_processes=1
+        fi
     fi
     
-    echo "✅ Services stopped"
+    if [ $stopped_processes -eq 0 ]; then
+        echo "   ✅ No additional processes found"
+    fi
+    
+    echo "✅ Service cleanup completed"
 }
 
 # Function to remove hampp command
