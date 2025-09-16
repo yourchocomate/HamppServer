@@ -101,13 +101,35 @@ class ServerManager:
                 logger.error("Failed to setup Apache configuration")
                 return False
             
-            # Start Apache
-            cmd = [self.services['apache']['binary'], 'start']
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            # Start Apache with proper command for Termux
+            if self.config.platform.is_termux:
+                # Termux uses httpd directly, not apachectl
+                cmd = [self.services['apache']['binary'], '-D', 'FOREGROUND']
+                # Start in background using subprocess
+                result = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                # Give it a moment to start
+                time.sleep(2)
+                # Check if process is still running
+                if result.poll() is None:
+                    # Process is running
+                    result_success = True
+                    result_stderr = ""
+                else:
+                    # Process died
+                    _, stderr = result.communicate()
+                    result_success = False
+                    result_stderr = stderr.decode()
+            else:
+                # Non-Termux systems
+                cmd = [self.services['apache']['binary'], 'start']
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                result_success = result.returncode == 0
+                result_stderr = result.stderr
             
-            if result.returncode != 0:
-                logger.error(f"Failed to start Apache: {result.stderr}")
+            if not result_success:
+                logger.error(f"Failed to start Apache: {result_stderr}")
                 return False
+            
             
             # Verify Apache is running
             time.sleep(2)  # Give Apache time to start
@@ -137,21 +159,30 @@ class ServerManager:
                 logger.info("Apache is not running")
                 return True
             
-            # Stop Apache
-            cmd = [self.services['apache']['binary'], 'stop']
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            
-            # Also try to kill process if stop command fails
-            if result.returncode != 0:
-                logger.warning(f"Apache stop command failed: {result.stderr}")
-                logger.info("Attempting to kill Apache processes")
-                
-                # Kill httpd processes
+            if self.config.platform.is_termux:
+                # Termux: Kill httpd processes directly
+                logger.info("Stopping Apache processes...")
                 try:
+                    subprocess.run(['pkill', '-f', 'httpd'], capture_output=True, timeout=10)
                     subprocess.run(['killall', 'httpd'], capture_output=True, timeout=10)
-                    subprocess.run(['pkill', '-f', 'apache'], capture_output=True, timeout=10)
                 except Exception:
                     pass
+            else:
+                # Non-Termux systems: Use apachectl stop
+                cmd = [self.services['apache']['binary'], 'stop']
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                # Also try to kill process if stop command fails
+                if result.returncode != 0:
+                    logger.warning(f"Apache stop command failed: {result.stderr}")
+                    logger.info("Attempting to kill Apache processes")
+                    
+                    # Kill httpd processes
+                    try:
+                        subprocess.run(['killall', 'httpd'], capture_output=True, timeout=10)
+                        subprocess.run(['pkill', '-f', 'apache'], capture_output=True, timeout=10)
+                    except Exception:
+                        pass
             
             # Remove PID file if it exists
             pid_file = Path(self.services['apache']['pid_file'])
@@ -187,20 +218,26 @@ class ServerManager:
                 logger.info("MySQL is already running")
                 return True
             
+            # Define MySQL data directory first
+            if self.config.platform.is_termux:
+                mysql_data_dir = "/data/data/com.termux/files/usr/var/lib/mysql"
+            else:
+                mysql_data_dir = "/var/lib/mysql"
+            
             # Start MySQL based on platform and available binaries
             if self.config.platform.is_termux:
-                # Try different Termux MySQL/MariaDB startup methods
+                # Termux-specific MySQL/MariaDB startup (no --user or --daemonize support)
                 prefix = "/data/data/com.termux/files/usr"
                 
-                # Method 1: Try mariadbd directly
+                # Method 1: Try mariadbd directly (most common)
                 if os.path.exists(f"{prefix}/bin/mariadbd"):
-                    cmd = [f"{prefix}/bin/mariadbd", "--user=mysql", "--daemonize"]
+                    cmd = [f"{prefix}/bin/mariadbd", f"--datadir={mysql_data_dir}"]
                 # Method 2: Try mysqld_safe
                 elif os.path.exists(f"{prefix}/bin/mysqld_safe"):
-                    cmd = [f"{prefix}/bin/mysqld_safe", "--user=mysql", "--datadir=/data/data/com.termux/files/usr/var/lib/mysql", "&"]
+                    cmd = [f"{prefix}/bin/mysqld_safe", f"--datadir={mysql_data_dir}"]
                 # Method 3: Try mysqld directly
                 elif os.path.exists(f"{prefix}/bin/mysqld"):
-                    cmd = [f"{prefix}/bin/mysqld", "--user=mysql", "--daemonize"]
+                    cmd = [f"{prefix}/bin/mysqld", f"--datadir={mysql_data_dir}"]
                 else:
                     logger.error("No MySQL/MariaDB binary found in Termux")
                     return False
@@ -214,15 +251,12 @@ class ServerManager:
                     cmd = ['mysqld', '--daemonize']
             
             # Ensure MySQL data directory exists
-            if self.config.platform.is_termux:
-                mysql_data_dir = "/data/data/com.termux/files/usr/var/lib/mysql"
-            else:
-                mysql_data_dir = "/var/lib/mysql"
             
             if not os.path.exists(mysql_data_dir):
                 logger.info("Initializing MySQL data directory...")
                 if self.config.platform.is_termux:
-                    init_cmd = [f"{prefix}/bin/mysql_install_db", "--user=mysql", f"--datadir={mysql_data_dir}"]
+                    # Termux doesn't support --user option
+                    init_cmd = [f"{prefix}/bin/mysql_install_db", f"--datadir={mysql_data_dir}"]
                 else:
                     init_cmd = ["mysql_install_db", "--user=mysql", f"--datadir={mysql_data_dir}"]
                 
@@ -232,19 +266,50 @@ class ServerManager:
             
             # Start MySQL
             logger.info(f"Starting MySQL with command: {' '.join(cmd)}")
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
-            if result.returncode != 0:
-                logger.error(f"Failed to start MySQL: {result.stderr}")
-                logger.info(f"Trying alternative startup method...")
+            if self.config.platform.is_termux:
+                # Termux: Start in background using Popen
+                try:
+                    mysql_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    # Give MySQL time to start
+                    time.sleep(3)
+                    
+                    # Check if process is still running
+                    if mysql_process.poll() is None:
+                        logger.info("MySQL process started successfully")
+                        mysql_success = True
+                    else:
+                        # Process died, get error
+                        _, stderr = mysql_process.communicate()
+                        logger.error(f"MySQL process died: {stderr.decode()}")
+                        mysql_success = False
+                except Exception as e:
+                    logger.error(f"Failed to start MySQL process: {e}")
+                    mysql_success = False
                 
-                # Try alternative method for Termux
-                if self.config.platform.is_termux:
-                    alt_cmd = [f"{prefix}/bin/mysqld_safe", "--user=mysql"]
-                    result = subprocess.run(alt_cmd, capture_output=True, text=True, timeout=10)
-                    if result.returncode != 0:
-                        logger.error(f"Alternative MySQL start also failed: {result.stderr}")
+                if not mysql_success:
+                    logger.info("Trying alternative startup method...")
+                    # Try without datadir parameter
+                    alt_cmd = [cmd[0]]  # Just the binary
+                    try:
+                        mysql_process = subprocess.Popen(alt_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        time.sleep(3)
+                        if mysql_process.poll() is None:
+                            logger.info("MySQL started with alternative method")
+                            mysql_success = True
+                        else:
+                            _, stderr = mysql_process.communicate()
+                            logger.error(f"Alternative MySQL start also failed: {stderr.decode()}")
+                            return False
+                    except Exception as e:
+                        logger.error(f"Alternative MySQL start crashed: {e}")
                         return False
+            else:
+                # Non-Termux systems
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                if result.returncode != 0:
+                    logger.error(f"Failed to start MySQL: {result.stderr}")
+                    return False
             
             # Verify MySQL is running
             time.sleep(3)  # Give MySQL time to start
@@ -273,24 +338,31 @@ class ServerManager:
                 logger.info("MySQL is not running")
                 return True
             
-            # Stop MySQL
             if self.config.platform.is_termux:
-                cmd = [self.services['mysql']['binary'], 'stop']
-            else:
-                cmd = ['mysqladmin', 'shutdown']
-            
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            
-            # Also try to kill process if stop command fails
-            if result.returncode != 0:
-                logger.warning(f"MySQL stop command failed: {result.stderr}")
-                logger.info("Attempting to kill MySQL processes")
-                
+                # Termux: Kill MySQL/MariaDB processes directly
+                logger.info("Stopping MySQL/MariaDB processes...")
                 try:
+                    subprocess.run(['pkill', '-f', 'mariadbd'], capture_output=True, timeout=10)
+                    subprocess.run(['killall', 'mariadbd'], capture_output=True, timeout=10)
+                    subprocess.run(['pkill', '-f', 'mysqld'], capture_output=True, timeout=10)
                     subprocess.run(['killall', 'mysqld'], capture_output=True, timeout=10)
-                    subprocess.run(['pkill', '-f', 'mysql'], capture_output=True, timeout=10)
                 except Exception:
                     pass
+            else:
+                # Non-Termux systems: Use mysqladmin shutdown
+                cmd = ['mysqladmin', 'shutdown']
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                
+                # Also try to kill process if stop command fails
+                if result.returncode != 0:
+                    logger.warning(f"MySQL stop command failed: {result.stderr}")
+                    logger.info("Attempting to kill MySQL processes")
+                    
+                    try:
+                        subprocess.run(['killall', 'mysqld'], capture_output=True, timeout=10)
+                        subprocess.run(['pkill', '-f', 'mysql'], capture_output=True, timeout=10)
+                    except Exception:
+                        pass
             
             # Verify MySQL is stopped
             time.sleep(1)

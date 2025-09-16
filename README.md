@@ -117,7 +117,8 @@ Just create an `index.html` or `index.php` file and it will show up!
 2. Look for error messages in the terminal
 3. Try restarting: stop and start services again
 4. **For Termux users**: See [TERMUX_TROUBLESHOOTING.md](TERMUX_TROUBLESHOOTING.md)
-5. Open an issue on GitHub if problems persist
+5. **Quick diagnostics**: Run `python3 test_termux_startup.py`
+6. Open an issue on GitHub if problems persist
 
 ## 🗑️ Uninstalling HamppServer
 

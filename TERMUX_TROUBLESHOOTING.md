@@ -23,6 +23,23 @@ ls -la /data/data/com.termux/files/usr/lib/apache2/modules/libphp.so
 ls -la /data/data/com.termux/files/usr/libexec/apache2/libphp.so
 ```
 
+### Issue: Apache shows usage help instead of starting
+```
+Usage: /data/data/com.termux/files/usr/bin/httpd [-D name] [-d directory] [-f file]...
+```
+
+**Solution:** 
+This is fixed in HamppServer v2.0! The new version uses the correct `httpd -D FOREGROUND` command for Termux.
+
+**Manual fix:**
+```bash
+# Start Apache manually
+/data/data/com.termux/files/usr/bin/httpd -D FOREGROUND &
+
+# Or test the configuration first
+/data/data/com.termux/files/usr/bin/httpd -t
+```
+
 ### Issue: Apache won't start with module errors
 
 **Solution:**
@@ -45,7 +62,10 @@ ERROR: Error starting MySQL: [Errno 2] No such file or directory:
 '/data/data/com.termux/files/usr/bin/mysql.server'
 ```
 
-**Solution:**
+**Solution:** 
+This is fixed in HamppServer v2.0! The new version automatically detects available MySQL/MariaDB binaries.
+
+**Manual fix:**
 ```bash
 # Check available MySQL/MariaDB binaries
 ls -la /data/data/com.termux/files/usr/bin/ | grep -i mysql
@@ -55,8 +75,39 @@ ls -la /data/data/com.termux/files/usr/bin/ | grep -i maria
 which mariadbd
 which mysqld_safe
 
-# Start MariaDB manually
-mariadbd --user=mysql --datadir=/data/data/com.termux/files/usr/var/lib/mysql &
+# Start MariaDB manually (without --user option in Termux)
+mariadbd --datadir=/data/data/com.termux/files/usr/var/lib/mysql &
+```
+
+### Issue: "One can only use the --user switch if running as root"
+```
+/data/data/com.termux/files/usr/bin/mariadbd: One can only use the --user switch if running as root
+```
+
+**Solution:**
+This is fixed in HamppServer v2.0! The new version removes the `--user` option for Termux.
+
+**Manual fix:**
+```bash
+# Start without --user option
+mariadbd --datadir=/data/data/com.termux/files/usr/var/lib/mysql &
+
+# Or use mysqld_safe
+mysqld_safe &
+```
+
+### Issue: "unknown option '--daemonize'"
+```
+/data/data/com.termux/files/usr/bin/mariadbd: unknown option '--daemonize'
+```
+
+**Solution:**
+This is fixed in HamppServer v2.0! The new version removes the `--daemonize` option for Termux.
+
+**Manual fix:**
+```bash
+# Start in background without --daemonize
+mariadbd --datadir=/data/data/com.termux/files/usr/var/lib/mysql &
 ```
 
 ### Issue: MySQL data directory not initialized
