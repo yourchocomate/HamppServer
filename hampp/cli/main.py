@@ -341,6 +341,12 @@ def config_reset(ctx: click.Context) -> None:
     else:
         console.print("Reset cancelled")
 
+@cli.command()
+@click.pass_context
+def install_pma(ctx: click.Context) -> None:
+    """Install PHPMyAdmin."""
+    installer = ctx.obj['installer']
+    installer.install_phpmyadmin()
 
 @cli.command()
 @click.pass_context
@@ -352,8 +358,8 @@ def interactive(ctx: click.Context) -> None:
     console.print(Panel.fit(
         "[bold blue]   __ __                       ____                    [/bold blue]\n"
         "[bold blue]  / // /__ ___ _  ___  ___    / __/__ _____  _____ ____[/bold blue]\n"
-        "[bold blue] / _  / _ `/  ' \/ _ \/ _ \  _\ \/ -_) __/ |/ / -_) __/[/bold blue]\n"
-        "[bold blue]/_//_/\_,_/_/_/_/ .__/ .__/ /___/\__/_/  |___/\__/_/   [/bold blue]\n"
+        "[bold blue] / _  / _ `/  ' \\/ _ \\/ _ \\  _\\ \\/ -_) __/ |/ / -_) __/[/bold blue]\n"
+        "[bold blue]/_//_/\\_,_/_/_/_/ .__/ .__/ /___/\\__/_/  |___/\\__/_/   [/bold blue]\n"
         "[bold blue]               /_/  /_/                                [/bold blue]\n\n"
         "[bold blue]Interactive Mode[/bold blue]\n"
         "[bold green]Author: Md Habibur Rahman[/bold green]\n"
@@ -371,10 +377,11 @@ def interactive(ctx: click.Context) -> None:
         console.print("4. Stop MySQL Server")
         console.print("5. Show Server Status")
         console.print("6. Configuration")
-        console.print("7. Exit")
+        console.print("7. Install PHPMyAdmin")
+        console.print("8. Exit")
         
         try:
-            choice = IntPrompt.ask("Choose an action", choices=["1", "2", "3", "4", "5", "6", "7"])
+            choice = IntPrompt.ask("Choose an action", choices=["1", "2", "3", "4", "5", "6", "7", "8"])
             
             if choice == 1:
                 # Start Apache with custom options
@@ -418,8 +425,9 @@ def interactive(ctx: click.Context) -> None:
                     ctx.invoke(config_set, key=key, value=value)
                 elif config_choice == 3:
                     ctx.invoke(config_reset)
-                    
             elif choice == 7:
+                ctx.invoke(install_pma)
+            elif choice == 8:
                 console.print("[cyan]Goodbye![/cyan]")
                 break
                 
