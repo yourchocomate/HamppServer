@@ -23,7 +23,7 @@
   .hampp h1{
     font-size: 33px;
     color: #444;
- .}
+  }
   .hampp p{
     margin: 0 auto;
     text-align: center;

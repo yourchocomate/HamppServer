@@ -1,0 +1,140 @@
+# HamppServer Apache Configuration Template
+# This file is processed by Jinja2 template engine
+
+ServerRoot "{{ server_root }}"
+Listen {{ port }}
+
+{% if php_module %}
+# PHP Module
+LoadModule {{ php_module }}_module {{ php_module_path }}
+
+<FilesMatch \.php$>
+    SetHandler application/x-httpd-php
+</FilesMatch>
+{% endif %}
+
+# Essential modules
+LoadModule mpm_prefork_module libexec/apache2/mod_mpm_prefork.so
+LoadModule authz_core_module libexec/apache2/mod_authz_core.so
+LoadModule dir_module libexec/apache2/mod_dir.so
+LoadModule mime_module libexec/apache2/mod_mime.so
+LoadModule rewrite_module libexec/apache2/mod_rewrite.so
+
+# Server identification
+ServerName {{ server_name | default('localhost') }}
+ServerAdmin {{ server_admin | default('admin@localhost') }}
+
+# Document root
+DocumentRoot "{{ document_root }}"
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Main directory configuration
+<Directory "{{ document_root }}">
+    Options {{ directory_options | default('Indexes FollowSymLinks') }}
+    AllowOverride {{ allow_override | default('All') }}
+    Require all granted
+    
+    # Enable .htaccess
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+    </IfModule>
+</Directory>
+
+# Deny access to sensitive files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(conf|log|ini|yml|yaml)$">
+    Require all denied
+</FilesMatch>
+
+# Directory index files
+DirectoryIndex {{ directory_index | default('index.html index.htm index.php') }}
+
+# MIME types
+TypesConfig {{ mime_types_config | default(server_root + '/conf/mime.types') }}
+
+# Logging
+ErrorLog {{ error_log | default(log_dir + '/apache2/error.log') }}
+CustomLog {{ access_log | default(log_dir + '/apache2/access.log') }} combined
+
+# Log level
+LogLevel {{ log_level | default('warn') }}
+
+# Process ID file
+PidFile {{ pid_file }}
+
+# Performance tuning
+{% if enable_compression | default(true) %}
+<IfModule mod_deflate.c>
+    # Compress HTML, CSS, JavaScript, Text, XML and fonts
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE application/x-font
+    AddOutputFilterByType DEFLATE application/x-font-opentype
+    AddOutputFilterByType DEFLATE application/x-font-otf
+    AddOutputFilterByType DEFLATE application/x-font-truetype
+    AddOutputFilterByType DEFLATE application/x-font-ttf
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE font/opentype
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE image/x-icon
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+</IfModule>
+{% endif %}
+
+# Cache control
+{% if enable_caching | default(true) %}
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Images
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Fonts
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+{% endif %}
+
+# Security enhancements
+<IfModule mod_security2.c>
+    SecRuleEngine {{ security_rule_engine | default('DetectionOnly') }}
+</IfModule>
+
+# Hide server signature
+ServerTokens {{ server_tokens | default('Prod') }}
+ServerSignature {{ server_signature | default('Off') }}
+
+{% if custom_config %}
+# Custom configuration
+{{ custom_config }}
+{% endif %}

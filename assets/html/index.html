@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="HamppServer - Modern localhost web server">
+    <title>HamppServer - Welcome</title>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+            --text-color: #333;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                         'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            max-width: 800px;
+            width: 95%;
+            margin: 2rem;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .version {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: #6c757d;
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+        }
+
+        .status {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            border: 2px solid var(--success-color);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .status-text {
+            color: #2e7d32;
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .status-icon {
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+
+        .link {
+            background: var(--bg-color);
+            border: 2px solid #e9ecef;
+            border-radius: var(--border-radius);
+            padding: 2rem 1.5rem;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .link:hover::before {
+            opacity: 0.05;
+        }
+
+        .link:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .link-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .link-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .link-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+            color: var(--text-color);
+        }
+
+        .link-desc {
+            font-size: 0.95rem;
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer-text {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .tech-item {
+            background: var(--bg-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #6c757d;
+            border: 1px solid #e9ecef;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .links {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .link {
+                padding: 1.5rem 1rem;
+            }
+
+            .tech-stack {
+                gap: 0.8rem;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-color: #e9ecef;
+                --bg-color: #2c3e50;
+                --card-bg: #34495e;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">HamppServer</div>
+        <div class="version">Version 2.0</div>
+        <div class="subtitle">Your modern, cross-platform localhost web server</div>
+        
+        <div class="status">
+            <div class="status-text">
+                <span class="status-icon">🚀</span>
+                Server is running successfully!
+            </div>
+        </div>
+        
+        <div class="links">
+            <a href="phpinfo.php" class="link">
+                <div class="link-content">
+                    <span class="link-icon">📋</span>
+                    <div class="link-title">PHP Information</div>
+                    <div class="link-desc">View detailed PHP configuration, modules, and environment variables</div>
+                </div>
+            </a>
+            
+            <a href="phpmyadmin/" class="link">
+                <div class="link-content">
+                    <span class="link-icon">🗄️</span>
+                    <div class="link-title">PHPMyAdmin</div>
+                    <div class="link-desc">Manage your MySQL/MariaDB databases with a web interface</div>
+                </div>
+            </a>
+            
+            <a href="#" onclick="showSystemInfo()" class="link">
+                <div class="link-content">
+                    <span class="link-icon">ℹ️</span>
+                    <div class="link-title">System Information</div>
+                    <div class="link-desc">View server and system information</div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                🎯 <strong>Quick Start:</strong> Replace this index.html with your own files to get started!
+            </div>
+            
+            <div class="tech-stack">
+                <span class="tech-item">Apache HTTP Server</span>
+                <span class="tech-item">MySQL/MariaDB</span>
+                <span class="tech-item">PHP</span>
+                <span class="tech-item">PHPMyAdmin</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSystemInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Screen Resolution': `${screen.width}x${screen.height}`,
+                'Color Depth': `${screen.colorDepth}-bit`,
+                'Time Zone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+                'Current Time': new Date().toLocaleString()
+            };
+            
+            let infoText = 'System Information:\\n\\n';
+            for (const [key, value] of Object.entries(info)) {
+                infoText += `${key}: ${value}\\n`;
+            }
+            
+            alert(infoText);
+        }
+        
+        // Add some interactive animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate links on scroll
+            const links = document.querySelectorAll('.link');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    }
+                });
+            });
+            
+            links.forEach(link => {
+                link.style.opacity = '0';
+                link.style.transform = 'translateY(20px)';
+                link.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(link);
+            });
+        });
+    </script>
+</body>
+</html>

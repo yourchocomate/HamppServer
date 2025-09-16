@@ -1,0 +1,13 @@
+# HamppServer Project Configuration
+# This file is optional - HamppServer works without complex packaging
+
+[project]
+name = "hampp-server"
+version = "2.0.0"
+description = "Simple localhost server manager for Apache, MySQL, and PHP"
+authors = [
+    {name = "Md Habibur Rahman", email = "yourchocomate@gmail.com"},
+]
+
+# Note: HamppServer can be run directly with:
+# python3 hampp.py interactive
