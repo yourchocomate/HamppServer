@@ -25,9 +25,22 @@ def check_apache_modules():
     try:
         modules = os.listdir(modules_dir)
         print(f"📋 Found {len(modules)} modules:")
-        for module in sorted(modules):
-            if module.endswith('.so'):
-                print(f"  ✅ {module}")
+        
+        # Check for MPM modules specifically (required for Apache)
+        mpm_modules = [m for m in modules if m.startswith('mod_mpm_') and m.endswith('.so')]
+        if mpm_modules:
+            print(f"  🔧 MPM modules (required): {', '.join(mpm_modules)}")
+        else:
+            print(f"  ❌ No MPM modules found - Apache will fail to start!")
+        
+        # List other modules
+        other_modules = [m for m in modules if m.endswith('.so') and not m.startswith('mod_mpm_')]
+        for module in sorted(other_modules[:10]):  # Show first 10 to avoid clutter
+            print(f"  ✅ {module}")
+        
+        if len(other_modules) > 10:
+            print(f"  ... and {len(other_modules) - 10} more modules")
+            
     except Exception as e:
         print(f"❌ Error listing modules: {e}")
 

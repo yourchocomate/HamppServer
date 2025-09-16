@@ -40,6 +40,22 @@ This is fixed in HamppServer v2.0! The new version uses the correct `httpd -D FO
 /data/data/com.termux/files/usr/bin/httpd -t
 ```
 
+### Issue: "Configuration error: No MPM loaded"
+```
+AH00534: httpd: Configuration error: No MPM loaded.
+```
+
+**Solution:**
+This is fixed in HamppServer v2.1! Apache requires exactly one MPM (Multi-Processing Module) to be loaded.
+
+**Manual check:**
+```bash
+# Check what MPM modules are available
+ls -la /data/data/com.termux/files/usr/libexec/apache2/mod_mpm_*.so
+
+# Should show: mod_mpm_prefork.so and mod_mpm_worker.so
+```
+
 ### Issue: "Cannot load mod_mpm_prefork.so" or other module errors
 ```
 Cannot load /data/data/com.termux/files/usr/lib/apache2/modules/mod_mpm_prefork.so 
@@ -51,8 +67,8 @@ This is fixed in HamppServer v2.0! The new version only loads modules that actua
 
 **Manual check:**
 ```bash
-# Check what modules are available
-ls -la /data/data/com.termux/files/usr/lib/apache2/modules/
+# Check what modules are available (correct path)
+ls -la /data/data/com.termux/files/usr/libexec/apache2/
 
 # Run the diagnostic script
 python3 check_termux_modules.py

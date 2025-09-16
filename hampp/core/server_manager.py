@@ -549,22 +549,43 @@ class ServerManager:
             
             # Check which modules actually exist in Termux
             available_modules = []
-            required_modules = [
+            
+            # MPM modules - MUST load exactly one (preferably first)
+            mpm_modules = [
                 ('mpm_prefork_module', 'mod_mpm_prefork.so'),
+                ('mpm_worker_module', 'mod_mpm_worker.so'),
+                ('mpm_event_module', 'mod_mpm_event.so'),
+            ]
+            
+            mpm_loaded = False
+            for module_name, module_file in mpm_modules:
+                module_path = f"{modules_dir}/{module_file}"
+                if os.path.exists(module_path) and not mpm_loaded:
+                    available_modules.append(f"LoadModule {module_name} {module_path}")
+                    mpm_loaded = True
+                    break
+            
+            if not mpm_loaded:
+                # Force load prefork if it exists (we know it does from the ls output)
+                prefork_path = f"{modules_dir}/mod_mpm_prefork.so"
+                available_modules.append(f"LoadModule mpm_prefork_module {prefork_path}")
+            
+            # Other essential modules
+            other_modules = [
                 ('authz_core_module', 'mod_authz_core.so'),
                 ('dir_module', 'mod_dir.so'),
                 ('mime_module', 'mod_mime.so'),
                 ('rewrite_module', 'mod_rewrite.so'),
             ]
             
-            for module_name, module_file in required_modules:
+            for module_name, module_file in other_modules:
                 module_path = f"{modules_dir}/{module_file}"
                 if os.path.exists(module_path):
                     available_modules.append(f"LoadModule {module_name} {module_path}")
             
-            # If no modules found, use a minimal config
-            if not available_modules:
-                available_modules = ["# No additional modules found - using minimal configuration"]
+            # If no modules found, use a minimal config with forced MPM
+            if len(available_modules) == 0:
+                available_modules = [f"LoadModule mpm_prefork_module {modules_dir}/mod_mpm_prefork.so"]
             
             config = f"""
 # HamppServer Apache Configuration for Termux
