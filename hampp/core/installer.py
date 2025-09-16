@@ -63,6 +63,7 @@ class Installer:
         
         # Setup directories and files
         success &= self._setup_directories()
+        success &= self._setup_server_configurations()
         success &= self._setup_configuration_files()
         success &= self._setup_web_files()
         
@@ -284,6 +285,341 @@ class Installer:
                 return False
         
         return True
+    
+    def _setup_server_configurations(self) -> bool:
+        """Setup Apache and MySQL configuration files.
+        
+        Returns:
+            True if setup successful
+        """
+        logger.info("Setting up server configurations...")
+        
+        success = True
+        success &= self._setup_apache_configuration()
+        success &= self._setup_mysql_configuration()
+        
+        return success
+    
+    def _setup_apache_configuration(self) -> bool:
+        """Setup Apache configuration file.
+        
+        Returns:
+            True if setup successful
+        """
+        logger.info("Setting up Apache configuration...")
+        
+        apache_config_path = self.config.path_config.apache_config
+        
+        # Check if config file exists
+        if os.path.exists(apache_config_path):
+            # Create backup of existing config
+            backup_path = f"{apache_config_path}.hampp_backup"
+            if not os.path.exists(backup_path):
+                try:
+                    import shutil
+                    shutil.copy2(apache_config_path, backup_path)
+                    logger.info(f"Backed up existing Apache config to: {backup_path}")
+                except Exception as e:
+                    logger.warning(f"Could not backup Apache config: {e}")
+        
+        # Generate HamppServer Apache configuration
+        apache_config = self._generate_apache_config()
+        
+        try:
+            os.makedirs(os.path.dirname(apache_config_path), exist_ok=True)
+            with open(apache_config_path, 'w') as f:
+                f.write(apache_config)
+            logger.info(f"Apache configuration written to: {apache_config_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to write Apache config: {e}")
+            return False
+    
+    def _setup_mysql_configuration(self) -> bool:
+        """Setup MySQL configuration file.
+        
+        Returns:
+            True if setup successful
+        """
+        logger.info("Setting up MySQL configuration...")
+        
+        mysql_config_path = self.config.path_config.mysql_config
+        
+        # Check if config file exists
+        if os.path.exists(mysql_config_path):
+            # Create backup of existing config
+            backup_path = f"{mysql_config_path}.hampp_backup"
+            if not os.path.exists(backup_path):
+                try:
+                    import shutil
+                    shutil.copy2(mysql_config_path, backup_path)
+                    logger.info(f"Backed up existing MySQL config to: {backup_path}")
+                except Exception as e:
+                    logger.warning(f"Could not backup MySQL config: {e}")
+        
+        # Generate HamppServer MySQL configuration
+        mysql_config = self._generate_mysql_config()
+        
+        try:
+            os.makedirs(os.path.dirname(mysql_config_path), exist_ok=True)
+            with open(mysql_config_path, 'w') as f:
+                f.write(mysql_config)
+            logger.info(f"MySQL configuration written to: {mysql_config_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to write MySQL config: {e}")
+            return False
+    
+    def _generate_apache_config(self) -> str:
+        """Generate Apache configuration content.
+        
+        Returns:
+            Apache configuration content
+        """
+        if self.config.platform.is_termux:
+            return self._generate_termux_apache_config()
+        else:
+            return self._generate_linux_apache_config()
+    
+    def _generate_termux_apache_config(self) -> str:
+        """Generate Termux-specific Apache configuration.
+        
+        Returns:
+            Apache configuration content
+        """
+        prefix = "/data/data/com.termux/files/usr"
+        modules_dir = f"{prefix}/libexec/apache2"
+        document_root = self.config.server_config.document_root
+        port = self.config.server_config.apache_port
+        
+        # Generate module loading directives based on what actually exists
+        module_lines = []
+        
+        # Essential modules in order of importance
+        essential_modules = [
+            ('mpm_prefork_module', 'mod_mpm_prefork.so'),
+            ('authz_core_module', 'mod_authz_core.so'),
+            ('dir_module', 'mod_dir.so'),
+            ('mime_module', 'mod_mime.so'),
+            ('log_config_module', 'mod_log_config.so'),
+            ('rewrite_module', 'mod_rewrite.so'),
+        ]
+        
+        for module_name, module_file in essential_modules:
+            module_path = f"{modules_dir}/{module_file}"
+            if os.path.exists(module_path):
+                module_lines.append(f"LoadModule {module_name} {module_path}")
+        
+        # PHP module (check for libphp.so)
+        php_module_path = f"{modules_dir}/libphp.so"
+        if os.path.exists(php_module_path):
+            module_lines.append(f"LoadModule php_module {php_module_path}")
+        
+        modules_config = "\n".join(module_lines)
+        
+        return f"""# HamppServer Apache Configuration for Termux
+# Generated automatically by installer
+
+ServerRoot "{prefix}"
+Listen {port}
+
+# Essential modules (only those that exist)
+{modules_config}
+
+# Server identification
+ServerName localhost
+ServerAdmin admin@localhost
+
+# Document root
+DocumentRoot "{document_root}"
+
+# Directory permissions
+<Directory "{document_root}">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+# Directory index
+DirectoryIndex index.html index.htm index.php
+
+# PHP file handling
+<FilesMatch \\.php$>
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# MIME types
+TypesConfig {prefix}/etc/apache2/mime.types
+
+# Error and access logs
+ErrorLog {prefix}/var/log/apache2/error.log
+CustomLog {prefix}/var/log/apache2/access.log combined
+
+# Process ID file
+PidFile {prefix}/var/run/apache2/httpd.pid
+"""
+    
+    def _generate_linux_apache_config(self) -> str:
+        """Generate Linux-specific Apache configuration.
+        
+        Returns:
+            Apache configuration content
+        """
+        document_root = self.config.server_config.document_root
+        port = self.config.server_config.apache_port
+        
+        return f"""# HamppServer Apache Configuration for Linux
+# Generated automatically by installer
+
+ServerRoot /etc/apache2
+Listen {port}
+
+# Load essential modules
+LoadModule mpm_prefork_module /usr/lib/apache2/modules/mod_mpm_prefork.so
+LoadModule authz_core_module /usr/lib/apache2/modules/mod_authz_core.so
+LoadModule dir_module /usr/lib/apache2/modules/mod_dir.so
+LoadModule mime_module /usr/lib/apache2/modules/mod_mime.so
+LoadModule log_config_module /usr/lib/apache2/modules/mod_log_config.so
+LoadModule rewrite_module /usr/lib/apache2/modules/mod_rewrite.so
+LoadModule php_module /usr/lib/apache2/modules/libphp.so
+
+# Server identification
+ServerName localhost
+ServerAdmin admin@localhost
+
+# Document root
+DocumentRoot "{document_root}"
+
+<Directory "{document_root}">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+# Directory index
+DirectoryIndex index.html index.htm index.php
+
+# PHP file handling
+<FilesMatch \\.php$>
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# MIME types
+TypesConfig /etc/mime.types
+
+# Error and access logs
+ErrorLog /var/log/apache2/error.log
+CustomLog /var/log/apache2/access.log combined
+
+# Process ID file
+PidFile /var/run/apache2/httpd.pid
+"""
+    
+    def _generate_mysql_config(self) -> str:
+        """Generate MySQL configuration content.
+        
+        Returns:
+            MySQL configuration content
+        """
+        if self.config.platform.is_termux:
+            return self._generate_termux_mysql_config()
+        else:
+            return self._generate_linux_mysql_config()
+    
+    def _generate_termux_mysql_config(self) -> str:
+        """Generate Termux-specific MySQL configuration.
+        
+        Returns:
+            MySQL configuration content
+        """
+        prefix = "/data/data/com.termux/files/usr"
+        
+        return f"""# HamppServer MySQL Configuration for Termux
+# Generated automatically by installer
+
+[client]
+port = {self.config.server_config.mysql_port}
+socket = {prefix}/var/run/mysqld.sock
+
+[mysqld]
+port = {self.config.server_config.mysql_port}
+socket = {prefix}/var/run/mysqld.sock
+datadir = {prefix}/var/lib/mysql
+log-error = {prefix}/var/log/mysql/error.log
+pid-file = {prefix}/var/run/mysqld.pid
+
+# Skip networking for local access only
+skip-networking = 1
+
+# Character set
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Memory settings
+key_buffer_size = 16M
+max_allowed_packet = 64M
+thread_stack = 192K
+thread_cache_size = 8
+
+# Query cache
+query_cache_limit = 1M
+query_cache_size = 16M
+
+# InnoDB settings
+innodb_buffer_pool_size = 128M
+innodb_log_file_size = 64M
+innodb_log_buffer_size = 8M
+innodb_flush_log_at_trx_commit = 1
+innodb_lock_wait_timeout = 50
+"""
+    
+    def _generate_linux_mysql_config(self) -> str:
+        """Generate Linux-specific MySQL configuration.
+        
+        Returns:
+            MySQL configuration content
+        """
+        return f"""# HamppServer MySQL Configuration for Linux
+# Generated automatically by installer
+
+[client]
+port = {self.config.server_config.mysql_port}
+socket = /var/run/mysqld/mysqld.sock
+
+[mysqld]
+port = {self.config.server_config.mysql_port}
+socket = /var/run/mysqld/mysqld.sock
+datadir = /var/lib/mysql
+log-error = /var/log/mysql/error.log
+pid-file = /var/run/mysqld/mysqld.pid
+
+# Network settings
+bind-address = 127.0.0.1
+
+# Character set
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Memory settings
+key_buffer_size = 16M
+max_allowed_packet = 64M
+thread_stack = 192K
+thread_cache_size = 8
+
+# Query cache
+query_cache_limit = 1M
+query_cache_size = 16M
+
+# InnoDB settings
+innodb_buffer_pool_size = 128M
+innodb_log_file_size = 64M
+innodb_log_buffer_size = 8M
+innodb_flush_log_at_trx_commit = 1
+innodb_lock_wait_timeout = 50
+
+# Security settings
+local-infile = 0
+"""
     
     def _setup_configuration_files(self) -> bool:
         """Setup configuration files.
