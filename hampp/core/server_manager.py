@@ -547,6 +547,10 @@ class ServerManager:
             prefix = "/data/data/com.termux/files/usr"
             modules_dir = self.config.path_config.apache_modules_dir
             
+            # Ensure we have a valid modules directory
+            if not modules_dir or not os.path.exists(modules_dir):
+                modules_dir = f"{prefix}/libexec/apache2"
+            
             # Check which modules actually exist in Termux
             available_modules = []
             
@@ -575,6 +579,7 @@ class ServerManager:
                 ('authz_core_module', 'mod_authz_core.so'),
                 ('dir_module', 'mod_dir.so'),
                 ('mime_module', 'mod_mime.so'),
+                ('log_config_module', 'mod_log_config.so'),  # Required for CustomLog
                 ('rewrite_module', 'mod_rewrite.so'),
             ]
             

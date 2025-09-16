@@ -33,6 +33,16 @@ def check_apache_modules():
         else:
             print(f"  ❌ No MPM modules found - Apache will fail to start!")
         
+        # Check for essential modules
+        essential_modules = ['mod_log_config.so', 'mod_authz_core.so', 'mod_dir.so', 'mod_mime.so']
+        found_essential = [m for m in modules if m in essential_modules]
+        missing_essential = [m for m in essential_modules if m not in modules]
+        
+        if found_essential:
+            print(f"  📋 Essential modules: {', '.join(found_essential)}")
+        if missing_essential:
+            print(f"  ⚠️ Missing essential: {', '.join(missing_essential)}")
+        
         # List other modules
         other_modules = [m for m in modules if m.endswith('.so') and not m.startswith('mod_mpm_')]
         for module in sorted(other_modules[:10]):  # Show first 10 to avoid clutter

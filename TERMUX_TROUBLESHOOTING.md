@@ -56,6 +56,21 @@ ls -la /data/data/com.termux/files/usr/libexec/apache2/mod_mpm_*.so
 # Should show: mod_mpm_prefork.so and mod_mpm_worker.so
 ```
 
+### Issue: "Invalid command 'CustomLog'"
+```
+AH00526: Syntax error: Invalid command 'CustomLog', perhaps misspelled or 
+defined by a module not included in the server configuration
+```
+
+**Solution:**
+This is fixed in HamppServer v2.1! The `CustomLog` directive requires `mod_log_config.so` to be loaded.
+
+**Manual check:**
+```bash
+# Check if log_config module exists
+ls -la /data/data/com.termux/files/usr/libexec/apache2/mod_log_config.so
+```
+
 ### Issue: "Cannot load mod_mpm_prefork.so" or other module errors
 ```
 Cannot load /data/data/com.termux/files/usr/lib/apache2/modules/mod_mpm_prefork.so 
