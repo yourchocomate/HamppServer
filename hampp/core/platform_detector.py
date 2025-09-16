@@ -196,11 +196,20 @@ class PlatformDetector:
     def check_dependencies(self) -> dict:
         """Check if required dependencies are available."""
         dependencies = {
-            'apache': self._check_command('apachectl'),
-            'mysql': self._check_command('mysql') or self._check_command('mariadb'),
+            'apache': self._check_command('apachectl') or self._check_command('httpd'),
+            'mysql': self._check_command('mysqld') or self._check_command('mariadb') or self._check_command('mysql'),
             'php': self._check_command('php'),
             'python': self._check_command('python3') or self._check_command('python'),
         }
+        
+        # Check for specific Termux paths
+        if self.is_termux:
+            termux_prefix = "/data/data/com.termux/files/usr"
+            dependencies.update({
+                'apache': os.path.exists(f"{termux_prefix}/bin/httpd") or os.path.exists(f"{termux_prefix}/bin/apachectl"),
+                'mysql': os.path.exists(f"{termux_prefix}/bin/mysqld") or os.path.exists(f"{termux_prefix}/bin/mariadbd"),
+                'php': os.path.exists(f"{termux_prefix}/bin/php"),
+            })
         
         return dependencies
     

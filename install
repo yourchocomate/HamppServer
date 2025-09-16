@@ -23,6 +23,14 @@ install_termux() {
     pkg install unzip -y
     pkg install wget -y
     
+    # Setup storage permission for /sdcard access
+    echo "📱 Setting up storage permissions..."
+    if [ ! -d "/sdcard" ] || [ ! -w "/sdcard" ]; then
+        echo "🔑 Please grant storage permission to Termux"
+        termux-setup-storage
+        sleep 2
+    fi
+    
     # Install Python dependencies
     echo "🐍 Installing Python dependencies..."
     pip install click rich pyyaml jinja2 psutil requests

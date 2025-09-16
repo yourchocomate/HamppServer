@@ -116,7 +116,8 @@ Just create an `index.html` or `index.php` file and it will show up!
 1. Check if all services are running: `python3 hampp.py status`
 2. Look for error messages in the terminal
 3. Try restarting: stop and start services again
-4. Open an issue on GitHub if problems persist
+4. **For Termux users**: See [TERMUX_TROUBLESHOOTING.md](TERMUX_TROUBLESHOOTING.md)
+5. Open an issue on GitHub if problems persist
 
 ## 🗑️ Uninstalling HamppServer
 

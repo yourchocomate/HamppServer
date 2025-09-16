@@ -129,9 +129,24 @@ class Config:
         """Setup Termux-specific paths."""
         prefix = "/data/data/com.termux/files/usr"
         
-        self.path_config.apache_bin = f"{prefix}/bin/apachectl"
+        # Check which binaries actually exist
+        if os.path.exists(f"{prefix}/bin/httpd"):
+            self.path_config.apache_bin = f"{prefix}/bin/httpd"
+        elif os.path.exists(f"{prefix}/bin/apachectl"):
+            self.path_config.apache_bin = f"{prefix}/bin/apachectl"
+        else:
+            self.path_config.apache_bin = f"{prefix}/bin/httpd"
+        
         self.path_config.apache_config = f"{prefix}/etc/apache2/httpd.conf"
-        self.path_config.mysql_bin = f"{prefix}/bin/mysql.server"
+        
+        # Check for MySQL/MariaDB binaries
+        if os.path.exists(f"{prefix}/bin/mariadbd"):
+            self.path_config.mysql_bin = f"{prefix}/bin/mariadbd"
+        elif os.path.exists(f"{prefix}/bin/mysqld"):
+            self.path_config.mysql_bin = f"{prefix}/bin/mysqld"
+        else:
+            self.path_config.mysql_bin = f"{prefix}/bin/mariadbd"
+        
         self.path_config.mysql_config = f"{prefix}/etc/my.cnf"
         self.path_config.php_bin = f"{prefix}/bin/php"
         self.path_config.document_root = "/sdcard/www"

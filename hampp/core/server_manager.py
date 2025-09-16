@@ -187,17 +187,64 @@ class ServerManager:
                 logger.info("MySQL is already running")
                 return True
             
-            # Start MySQL
+            # Start MySQL based on platform and available binaries
             if self.config.platform.is_termux:
-                cmd = [self.services['mysql']['binary'], 'start']
+                # Try different Termux MySQL/MariaDB startup methods
+                prefix = "/data/data/com.termux/files/usr"
+                
+                # Method 1: Try mariadbd directly
+                if os.path.exists(f"{prefix}/bin/mariadbd"):
+                    cmd = [f"{prefix}/bin/mariadbd", "--user=mysql", "--daemonize"]
+                # Method 2: Try mysqld_safe
+                elif os.path.exists(f"{prefix}/bin/mysqld_safe"):
+                    cmd = [f"{prefix}/bin/mysqld_safe", "--user=mysql", "--datadir=/data/data/com.termux/files/usr/var/lib/mysql", "&"]
+                # Method 3: Try mysqld directly
+                elif os.path.exists(f"{prefix}/bin/mysqld"):
+                    cmd = [f"{prefix}/bin/mysqld", "--user=mysql", "--daemonize"]
+                else:
+                    logger.error("No MySQL/MariaDB binary found in Termux")
+                    return False
             else:
-                cmd = ['mysqld', '--daemonize']
+                # Linux/other systems
+                if os.path.exists('/usr/bin/mysqld'):
+                    cmd = ['mysqld', '--daemonize']
+                elif os.path.exists('/usr/sbin/mysqld'):
+                    cmd = ['/usr/sbin/mysqld', '--daemonize']
+                else:
+                    cmd = ['mysqld', '--daemonize']
             
+            # Ensure MySQL data directory exists
+            if self.config.platform.is_termux:
+                mysql_data_dir = "/data/data/com.termux/files/usr/var/lib/mysql"
+            else:
+                mysql_data_dir = "/var/lib/mysql"
+            
+            if not os.path.exists(mysql_data_dir):
+                logger.info("Initializing MySQL data directory...")
+                if self.config.platform.is_termux:
+                    init_cmd = [f"{prefix}/bin/mysql_install_db", "--user=mysql", f"--datadir={mysql_data_dir}"]
+                else:
+                    init_cmd = ["mysql_install_db", "--user=mysql", f"--datadir={mysql_data_dir}"]
+                
+                init_result = subprocess.run(init_cmd, capture_output=True, text=True, timeout=60)
+                if init_result.returncode != 0:
+                    logger.warning(f"MySQL init warning: {init_result.stderr}")
+            
+            # Start MySQL
+            logger.info(f"Starting MySQL with command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
             if result.returncode != 0:
                 logger.error(f"Failed to start MySQL: {result.stderr}")
-                return False
+                logger.info(f"Trying alternative startup method...")
+                
+                # Try alternative method for Termux
+                if self.config.platform.is_termux:
+                    alt_cmd = [f"{prefix}/bin/mysqld_safe", "--user=mysql"]
+                    result = subprocess.run(alt_cmd, capture_output=True, text=True, timeout=10)
+                    if result.returncode != 0:
+                        logger.error(f"Alternative MySQL start also failed: {result.stderr}")
+                        return False
             
             # Verify MySQL is running
             time.sleep(3)  # Give MySQL time to start
@@ -401,7 +448,62 @@ class ServerManager:
         
         php_module = self._detect_php_module()
         
-        config = f"""
+        if self.config.platform.is_termux:
+            # Termux-specific configuration
+            prefix = "/data/data/com.termux/files/usr"
+            modules_dir = f"{prefix}/lib/apache2/modules"
+            
+            config = f"""
+# HamppServer Apache Configuration for Termux
+# Generated automatically - do not edit manually
+
+ServerRoot "{prefix}"
+Listen {port}
+
+# PHP Module
+{php_module}
+
+# Basic modules
+LoadModule mpm_prefork_module {modules_dir}/mod_mpm_prefork.so
+LoadModule authz_core_module {modules_dir}/mod_authz_core.so
+LoadModule dir_module {modules_dir}/mod_dir.so
+LoadModule mime_module {modules_dir}/mod_mime.so
+
+# Server identification
+ServerName localhost
+ServerAdmin admin@localhost
+
+# Document root
+DocumentRoot "{document_root}"
+
+# Directory permissions
+<Directory "{document_root}">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+# Directory index
+DirectoryIndex index.html index.htm index.php
+
+# PHP file handling
+<FilesMatch \\.php$>
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+# MIME types
+TypesConfig {prefix}/etc/apache2/mime.types
+
+# Error and access logs
+ErrorLog {prefix}/var/log/apache2/error.log
+CustomLog {prefix}/var/log/apache2/access.log combined
+
+# Process ID file
+PidFile {prefix}/var/run/apache2/httpd.pid
+"""
+        else:
+            # Linux/other systems configuration
+            config = f"""
 # HamppServer Apache Configuration
 # Generated automatically - do not edit manually
 
@@ -458,22 +560,39 @@ PidFile {self.services['apache']['pid_file']}
         Returns:
             PHP module configuration lines
         """
-        # Check for different PHP versions
-        php_modules = [
-            ('libphp.so', 'php'),
-            ('libphp7.so', 'php7'),
-            ('libphp8.so', 'php8'),
-        ]
-        
-        module_dir = f"{self.config.path_config.apache_config.rsplit('/', 2)[0]}/libexec/apache2"
-        
-        for module_file, module_name in php_modules:
-            module_path = f"{module_dir}/{module_file}"
-            if os.path.exists(module_path):
-                return f"LoadModule {module_name}_module {module_path}"
-        
-        # Default fallback
-        return "LoadModule php_module libexec/apache2/libphp.so"
+        if self.config.platform.is_termux:
+            # Termux-specific PHP module detection
+            prefix = "/data/data/com.termux/files/usr"
+            php_modules = [
+                (f"{prefix}/lib/apache2/modules/libphp.so", "php"),
+                (f"{prefix}/libexec/apache2/libphp.so", "php"),
+                (f"{prefix}/lib/apache2/modules/libphp8.so", "php8"),
+                (f"{prefix}/lib/apache2/modules/libphp7.so", "php7"),
+            ]
+            
+            for module_path, module_name in php_modules:
+                if os.path.exists(module_path):
+                    return f"LoadModule {module_name}_module {module_path}"
+            
+            # Termux fallback - check if PHP-Apache package is installed
+            return f"LoadModule php_module {prefix}/lib/apache2/modules/libphp.so"
+        else:
+            # Non-Termux systems
+            php_modules = [
+                ('libphp.so', 'php'),
+                ('libphp8.so', 'php8'),
+                ('libphp7.so', 'php7'),
+            ]
+            
+            module_dir = f"{self.config.path_config.apache_config.rsplit('/', 2)[0]}/libexec/apache2"
+            
+            for module_file, module_name in php_modules:
+                module_path = f"{module_dir}/{module_file}"
+                if os.path.exists(module_path):
+                    return f"LoadModule {module_name}_module {module_path}"
+            
+            # Default fallback
+            return "LoadModule php_module libexec/apache2/libphp.so"
     
     def _verify_apache_running(self, port: int) -> bool:
         """Verify Apache is running by making HTTP request.
