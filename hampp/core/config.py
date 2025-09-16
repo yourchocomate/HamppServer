@@ -30,6 +30,7 @@ class PathConfig:
     
     apache_bin: str = ""
     apache_config: str = ""
+    apache_modules_dir: str = ""
     mysql_bin: str = ""
     mysql_config: str = ""
     php_bin: str = ""
@@ -138,6 +139,7 @@ class Config:
             self.path_config.apache_bin = f"{prefix}/bin/httpd"
         
         self.path_config.apache_config = f"{prefix}/etc/apache2/httpd.conf"
+        self.path_config.apache_modules_dir = f"{prefix}/libexec/apache2"
         
         # Check for MySQL/MariaDB binaries
         if os.path.exists(f"{prefix}/bin/mariadbd"):
@@ -157,6 +159,7 @@ class Config:
         """Setup Linux-specific paths."""
         self.path_config.apache_bin = "/usr/bin/apachectl"
         self.path_config.apache_config = "/etc/apache2/apache2.conf"
+        self.path_config.apache_modules_dir = "/usr/lib/apache2/modules"
         self.path_config.mysql_bin = "/usr/bin/mysqld"
         self.path_config.mysql_config = "/etc/mysql/my.cnf"
         self.path_config.php_bin = "/usr/bin/php"
@@ -168,6 +171,7 @@ class Config:
         """Setup generic Unix paths."""
         self.path_config.apache_bin = "apachectl"
         self.path_config.apache_config = "/usr/local/etc/apache2/httpd.conf"
+        self.path_config.apache_modules_dir = "/usr/local/lib/apache2/modules"
         self.path_config.mysql_bin = "mysqld"
         self.path_config.mysql_config = "/usr/local/etc/my.cnf"
         self.path_config.php_bin = "php"

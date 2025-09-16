@@ -13,7 +13,7 @@ def check_apache_modules():
     print("🔍 Checking Apache modules...")
     
     prefix = "/data/data/com.termux/files/usr"
-    modules_dir = f"{prefix}/lib/apache2/modules"
+    modules_dir = f"{prefix}/libexec/apache2"  # Correct path for Termux
     
     if not os.path.exists(modules_dir):
         print(f"❌ Apache modules directory not found: {modules_dir}")
@@ -37,10 +37,9 @@ def check_php_modules():
     
     prefix = "/data/data/com.termux/files/usr"
     php_locations = [
-        f"{prefix}/lib/apache2/modules/libphp.so",
         f"{prefix}/libexec/apache2/libphp.so",
-        f"{prefix}/lib/apache2/modules/libphp8.so",
-        f"{prefix}/lib/apache2/modules/libphp7.so",
+        f"{prefix}/libexec/apache2/libphp8.so", 
+        f"{prefix}/libexec/apache2/libphp7.so",
     ]
     
     found_php = False

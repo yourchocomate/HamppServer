@@ -545,7 +545,7 @@ class ServerManager:
         if self.config.platform.is_termux:
             # Termux-specific configuration
             prefix = "/data/data/com.termux/files/usr"
-            modules_dir = f"{prefix}/lib/apache2/modules"
+            modules_dir = self.config.path_config.apache_modules_dir
             
             # Check which modules actually exist in Termux
             available_modules = []
@@ -672,12 +672,13 @@ PidFile {self.services['apache']['pid_file']}
         """
         if self.config.platform.is_termux:
             # Termux-specific PHP module detection
+            modules_dir = self.config.path_config.apache_modules_dir
             prefix = "/data/data/com.termux/files/usr"
             php_modules = [
-                (f"{prefix}/lib/apache2/modules/libphp.so", "php"),
-                (f"{prefix}/libexec/apache2/libphp.so", "php"),
-                (f"{prefix}/lib/apache2/modules/libphp8.so", "php8"),
-                (f"{prefix}/lib/apache2/modules/libphp7.so", "php7"),
+                (f"{modules_dir}/libphp.so", "php"),
+                (f"{prefix}/libexec/apache2/libphp.so", "php"),  # Alternative location
+                (f"{modules_dir}/libphp8.so", "php8"),
+                (f"{modules_dir}/libphp7.so", "php7"),
             ]
             
             for module_path, module_name in php_modules:
@@ -685,7 +686,7 @@ PidFile {self.services['apache']['pid_file']}
                     return f"LoadModule {module_name}_module {module_path}"
             
             # Termux fallback - check if PHP-Apache package is installed
-            return f"LoadModule php_module {prefix}/lib/apache2/modules/libphp.so"
+            return f"LoadModule php_module {modules_dir}/libphp.so"
         else:
             # Non-Termux systems
             php_modules = [
