@@ -651,22 +651,41 @@ local-infile = 0
         """
         logger.info("Setting up default web files...")
         
+        # Ensure document root exists
+        doc_root = self.config.server_config.document_root
+        if not ensure_directory(doc_root):
+            logger.error(f"Failed to create document root: {doc_root}")
+            return False
+        
         # Create default index.html
         index_html = self._generate_index_html()
-        index_path = Path(self.config.server_config.document_root) / "index.html"
+        index_path = Path(doc_root) / "index.html"
         
-        if not write_file(index_path, index_html):
-            logger.error("Failed to create index.html")
+        try:
+            if not write_file(index_path, index_html):
+                logger.error("Failed to create index.html")
+                return False
+            else:
+                logger.info(f"Created index.html at: {index_path}")
+        except Exception as e:
+            logger.error(f"Error creating index.html: {e}")
             return False
         
         # Create phpinfo.php
         phpinfo_content = "<?php phpinfo(); ?>"
-        phpinfo_path = Path(self.config.server_config.document_root) / "phpinfo.php"
+        phpinfo_path = Path(doc_root) / "phpinfo.php"
         
-        if not write_file(phpinfo_path, phpinfo_content):
-            logger.error("Failed to create phpinfo.php")
+        try:
+            if not write_file(phpinfo_path, phpinfo_content):
+                logger.error("Failed to create phpinfo.php")
+                return False
+            else:
+                logger.info(f"Created phpinfo.php at: {phpinfo_path}")
+        except Exception as e:
+            logger.error(f"Error creating phpinfo.php: {e}")
             return False
         
+        logger.info("Default web files created successfully")
         return True
     
     def _install_phpmyadmin(self) -> bool:
@@ -677,8 +696,14 @@ local-infile = 0
         """
         logger.info("Installing PHPMyAdmin...")
         
+        # Ensure document root exists
+        doc_root = self.config.server_config.document_root
+        if not ensure_directory(doc_root):
+            logger.error(f"Failed to create document root: {doc_root}")
+            return False
+        
         phpmyadmin_url = "https://github.com/yourchocomate/phpmyadmin/raw/main/phpmyadmin.zip"
-        phpmyadmin_dir = Path(self.config.server_config.document_root) / "phpmyadmin"
+        phpmyadmin_dir = Path(doc_root) / "phpmyadmin"
         
         # Skip if already exists
         if phpmyadmin_dir.exists():
@@ -686,24 +711,46 @@ local-infile = 0
             return True
         
         try:
+            # Check internet connection first
+            logger.info("Checking internet connection...")
+            import urllib.request
+            urllib.request.urlopen('https://www.google.com', timeout=10)
+            
             # Download PHPMyAdmin
             with tempfile.TemporaryDirectory() as temp_dir:
                 zip_path = Path(temp_dir) / "phpmyadmin.zip"
                 
                 logger.info("Downloading PHPMyAdmin...")
-                urlretrieve(phpmyadmin_url, zip_path)
+                try:
+                    urlretrieve(phpmyadmin_url, zip_path)
+                except Exception as e:
+                    logger.error(f"Failed to download PHPMyAdmin: {e}")
+                    logger.info("PHPMyAdmin installation skipped - you can install it manually later")
+                    return True  # Don't fail the entire installation
+                
+                # Verify download
+                if not zip_path.exists() or zip_path.stat().st_size < 1000:
+                    logger.warning("Downloaded file seems invalid, skipping PHPMyAdmin")
+                    return True
                 
                 # Extract PHPMyAdmin
                 logger.info("Extracting PHPMyAdmin...")
+                ensure_directory(phpmyadmin_dir)
+                
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(phpmyadmin_dir)
                 
-                logger.info("PHPMyAdmin installed successfully")
+                logger.info(f"PHPMyAdmin installed successfully at: {phpmyadmin_dir}")
                 return True
                 
+        except urllib.error.URLError:
+            logger.warning("No internet connection - PHPMyAdmin installation skipped")
+            logger.info("You can install PHPMyAdmin manually later")
+            return True  # Don't fail installation due to no internet
         except Exception as e:
             logger.error(f"Failed to install PHPMyAdmin: {e}")
-            return False
+            logger.info("PHPMyAdmin installation failed - you can install it manually later")
+            return True  # Don't fail the entire installation
     
     def _generate_hampp_script(self) -> str:
         """Generate hampp command script.

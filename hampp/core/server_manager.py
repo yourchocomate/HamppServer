@@ -508,6 +508,9 @@ class ServerManager:
         try:
             config_file = self.services['apache']['config_file']
             
+            # Clean the config file path (remove any newlines or extra whitespace)
+            config_file = str(config_file).strip()
+            
             # Backup original config
             if not backup_file(config_file):
                 logger.warning("Could not backup Apache configuration")
