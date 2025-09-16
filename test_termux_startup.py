@@ -30,6 +30,14 @@ def test_apache_command():
             if os.path.exists(expected_binary):
                 print(f"✅ Apache binary found: {expected_binary}")
                 
+                # Check available modules
+                modules_dir = "/data/data/com.termux/files/usr/lib/apache2/modules"
+                if os.path.exists(modules_dir):
+                    modules = [f for f in os.listdir(modules_dir) if f.endswith('.so')]
+                    print(f"📋 Found {len(modules)} Apache modules")
+                    if len(modules) < 3:
+                        print("⚠️ Very few modules found - this might cause issues")
+                
                 # Test the command that would be run
                 test_cmd = [expected_binary, '-t']  # Test configuration
                 try:
@@ -37,7 +45,9 @@ def test_apache_command():
                     if result.returncode == 0:
                         print("✅ Apache configuration test passed")
                     else:
-                        print(f"⚠️ Apache config test failed: {result.stderr}")
+                        print(f"⚠️ Apache config test failed: {result.stderr.strip()}")
+                        if "Cannot load" in result.stderr:
+                            print("💡 Try: python3 check_termux_modules.py")
                 except Exception as e:
                     print(f"⚠️ Apache config test error: {e}")
             else:

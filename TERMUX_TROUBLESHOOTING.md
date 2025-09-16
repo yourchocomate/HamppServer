@@ -40,6 +40,30 @@ This is fixed in HamppServer v2.0! The new version uses the correct `httpd -D FO
 /data/data/com.termux/files/usr/bin/httpd -t
 ```
 
+### Issue: "Cannot load mod_mpm_prefork.so" or other module errors
+```
+Cannot load /data/data/com.termux/files/usr/lib/apache2/modules/mod_mpm_prefork.so 
+into server: dlopen failed: library not found
+```
+
+**Solution:**
+This is fixed in HamppServer v2.0! The new version only loads modules that actually exist.
+
+**Manual check:**
+```bash
+# Check what modules are available
+ls -la /data/data/com.termux/files/usr/lib/apache2/modules/
+
+# Run the diagnostic script
+python3 check_termux_modules.py
+
+# Verify Apache installation
+pkg reinstall apache2
+
+# Test Apache configuration
+/data/data/com.termux/files/usr/bin/httpd -t
+```
+
 ### Issue: Apache won't start with module errors
 
 **Solution:**
@@ -110,12 +134,34 @@ This is fixed in HamppServer v2.0! The new version removes the `--daemonize` opt
 mariadbd --datadir=/data/data/com.termux/files/usr/var/lib/mysql &
 ```
 
+### Issue: "MySQL failed to start properly" (process detection)
+```
+MySQL process started successfully
+MySQL failed to start properly
+```
+
+**Solution:**
+This is fixed in HamppServer v2.0! The new version has better process detection for MariaDB.
+
+**Manual check:**
+```bash
+# Check if MariaDB is actually running
+ps aux | grep maria
+ps aux | grep mysql
+
+# Check if port is in use
+netstat -tlnp | grep :3306
+
+# Try connecting to MySQL
+mysql -u root
+```
+
 ### Issue: MySQL data directory not initialized
 
 **Solution:**
 ```bash
-# Initialize MySQL data directory
-mysql_install_db --user=mysql --datadir=/data/data/com.termux/files/usr/var/lib/mysql
+# Initialize MySQL data directory (without --user in Termux)
+mysql_install_db --datadir=/data/data/com.termux/files/usr/var/lib/mysql
 
 # Set proper permissions
 chmod 755 /data/data/com.termux/files/usr/var/lib/mysql
@@ -156,6 +202,18 @@ pkg install python-cryptography python-lxml
 ```
 
 ## 🔍 Debugging Commands
+
+### Run Diagnostics
+```bash
+# Quick HamppServer diagnostics
+python3 test_termux_startup.py
+
+# Detailed module and binary check
+python3 check_termux_modules.py
+
+# Check HamppServer status
+python3 hampp.py status
+```
 
 ### Check Services Status
 ```bash

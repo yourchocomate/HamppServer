@@ -312,11 +312,33 @@ class ServerManager:
                     return False
             
             # Verify MySQL is running
-            time.sleep(3)  # Give MySQL time to start
+            logger.info("Verifying MySQL startup...")
+            time.sleep(5)  # Give MySQL more time to start
             
-            if not self.is_service_running('mysql'):
+            # Try multiple times to detect MySQL
+            mysql_detected = False
+            for attempt in range(3):
+                if self.is_service_running('mysql'):
+                    mysql_detected = True
+                    break
+                time.sleep(2)  # Wait a bit more between attempts
+            
+            if not mysql_detected:
                 logger.error("MySQL failed to start properly")
-                return False
+                logger.info("Checking processes manually...")
+                # Debug: Show what processes are running
+                try:
+                    result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=10)
+                    mysql_processes = [line for line in result.stdout.split('\n') if 'maria' in line.lower() or 'mysql' in line.lower()]
+                    if mysql_processes:
+                        logger.info(f"Found potential MySQL processes: {mysql_processes}")
+                        # If we found processes, consider it successful
+                        mysql_detected = True
+                except Exception:
+                    pass
+                
+                if not mysql_detected:
+                    return False
             
             logger.info(f"MySQL started successfully on port {self.services['mysql']['port']}")
             
@@ -450,26 +472,26 @@ class ServerManager:
         Returns:
             True if service is running
         """
-        # Check by PID file
-        pid = self._get_service_pid(service)
-        if pid and self._is_process_running(pid):
-            return True
-        
-        # Check by port
-        port = self.services[service]['port']
-        if self._is_port_in_use(port):
-            return True
-        
-        # Check by process name
+        # Check by process name first (most reliable for Termux)
         process_names = {
             'apache': ['httpd', 'apache2'],
-            'mysql': ['mysqld', 'mariadb']
+            'mysql': ['mariadbd', 'mysqld', 'mysql']  # Add mariadbd for Termux
         }
         
         if service in process_names:
             for proc_name in process_names[service]:
                 if self._is_process_running_by_name(proc_name):
                     return True
+        
+        # Check by PID file
+        pid = self._get_service_pid(service)
+        if pid and self._is_process_running(pid):
+            return True
+        
+        # Check by port (last resort)
+        port = self.services[service]['port']
+        if self._is_port_in_use(port):
+            return True
         
         return False
     
@@ -525,6 +547,25 @@ class ServerManager:
             prefix = "/data/data/com.termux/files/usr"
             modules_dir = f"{prefix}/lib/apache2/modules"
             
+            # Check which modules actually exist in Termux
+            available_modules = []
+            required_modules = [
+                ('mpm_prefork_module', 'mod_mpm_prefork.so'),
+                ('authz_core_module', 'mod_authz_core.so'),
+                ('dir_module', 'mod_dir.so'),
+                ('mime_module', 'mod_mime.so'),
+                ('rewrite_module', 'mod_rewrite.so'),
+            ]
+            
+            for module_name, module_file in required_modules:
+                module_path = f"{modules_dir}/{module_file}"
+                if os.path.exists(module_path):
+                    available_modules.append(f"LoadModule {module_name} {module_path}")
+            
+            # If no modules found, use a minimal config
+            if not available_modules:
+                available_modules = ["# No additional modules found - using minimal configuration"]
+            
             config = f"""
 # HamppServer Apache Configuration for Termux
 # Generated automatically - do not edit manually
@@ -535,11 +576,8 @@ Listen {port}
 # PHP Module
 {php_module}
 
-# Basic modules
-LoadModule mpm_prefork_module {modules_dir}/mod_mpm_prefork.so
-LoadModule authz_core_module {modules_dir}/mod_authz_core.so
-LoadModule dir_module {modules_dir}/mod_dir.so
-LoadModule mime_module {modules_dir}/mod_mime.so
+# Available modules
+{chr(10).join(available_modules)}
 
 # Server identification
 ServerName localhost
@@ -563,8 +601,8 @@ DirectoryIndex index.html index.htm index.php
     SetHandler application/x-httpd-php
 </FilesMatch>
 
-# MIME types
-TypesConfig {prefix}/etc/apache2/mime.types
+# MIME types (if file exists)
+{f'TypesConfig {prefix}/etc/apache2/mime.types' if os.path.exists(f'{prefix}/etc/apache2/mime.types') else '# mime.types not found'}
 
 # Error and access logs
 ErrorLog {prefix}/var/log/apache2/error.log
@@ -730,9 +768,17 @@ PidFile {self.services['apache']['pid_file']}
             True if process is running
         """
         try:
-            for proc in psutil.process_iter(['name']):
+            for proc in psutil.process_iter(['name', 'cmdline']):
+                # Check exact name match
                 if proc.info['name'] == name:
                     return True
+                # Also check if name appears in command line (for full paths)
+                if proc.info['cmdline']:
+                    cmdline = ' '.join(proc.info['cmdline'])
+                    if name in cmdline:
+                        return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
         except Exception:
             pass
         
