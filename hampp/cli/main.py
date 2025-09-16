@@ -346,7 +346,7 @@ def config_reset(ctx: click.Context) -> None:
 def install_pma(ctx: click.Context) -> None:
     """Install PHPMyAdmin."""
     installer = ctx.obj['installer']
-    installer.install_phpmyadmin()
+    installer._install_phpmyadmin()
 
 @cli.command()
 @click.pass_context
