@@ -275,6 +275,7 @@ class Installer:
         
         directories = [
             self.config.server_config.document_root,
+            self.config.path_config.document_root,
             self.config.path_config.log_dir + "/apache2",
             self.config.path_config.pid_dir + "/apache2",
         ]
@@ -389,7 +390,7 @@ class Installer:
         """
         prefix = "/data/data/com.termux/files/usr"
         modules_dir = f"{prefix}/libexec/apache2"
-        document_root = self.config.server_config.document_root
+        document_root = self.config.path_config.document_root
         port = self.config.server_config.apache_port
         
         # Generate module loading directives based on what actually exists
@@ -465,7 +466,7 @@ PidFile {prefix}/var/run/apache2/httpd.pid
         Returns:
             Apache configuration content
         """
-        document_root = self.config.server_config.document_root
+        document_root = self.config.path_config.document_root
         port = self.config.server_config.apache_port
         
         return f"""# HamppServer Apache Configuration for Linux
@@ -652,7 +653,7 @@ local-infile = 0
         logger.info("Setting up default web files...")
         
         # Ensure document root exists
-        doc_root = self.config.server_config.document_root
+        doc_root = self.config.path_config.document_root
         if not ensure_directory(doc_root):
             logger.error(f"Failed to create document root: {doc_root}")
             return False
@@ -697,7 +698,7 @@ local-infile = 0
         logger.info("Installing PHPMyAdmin...")
         
         # Ensure document root exists
-        doc_root = self.config.server_config.document_root
+        doc_root = self.config.path_config.document_root
         if not ensure_directory(doc_root):
             logger.error(f"Failed to create document root: {doc_root}")
             return False

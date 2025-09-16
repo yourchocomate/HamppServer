@@ -89,7 +89,7 @@ class ServerManager:
                     logger.error(f"Invalid document root: {error}")
                     return False
             else:
-                document_root = self.config.server_config.document_root
+                document_root = self.config.path_config.document_root
             
             # Check if already running
             if self.is_service_running('apache'):
